@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT 一线自助 Agent · AgentScope-Java 落地演示</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f5f6f8; --panel:#ffffff; --line:#e4e6eb; --line-strong:#d3d6dd;
+  --text:#1a1d23; --text-2:#5a6070; --text-3:#8b91a0;
+  --blue:#2563eb; --blue-bg:#eef3fe; --blue-line:#c7d8fb;
+  --amber:#b45309; --amber-bg:#fef6e7; --amber-line:#f6d9a5;
+  --green:#0f7b52; --green-bg:#eaf7f1; --green-line:#bde5d4;
+  --red:#b42318; --red-bg:#fdecea; --red-line:#f6c9c4;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--text);
+  font-size:13px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+button{font-family:inherit;font-size:inherit;cursor:pointer;border:none;background:none;color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#cfd3da;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#b6bbc4}
+::-webkit-scrollbar-track{background:transparent}
+
+.topbar{
+  height:52px;flex:0 0 52px;background:var(--panel);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 22px 0 18px;gap:14px;z-index:20;
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;letter-spacing:.2px}
+.brand .logo{
+  width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#2563eb,#1e40af);
+  color:#fff;display:grid;place-items:center;font-size:13px;font-weight:600;letter-spacing:-.5px;
+}
+.topbar .tag{
+  font-size:11px;color:var(--text-2);border:1px solid var(--line);border-radius:20px;
+  padding:2px 9px;background:#fafbfc;
+}
+.topbar .spacer{flex:1}
+.topbar .meta{display:flex;gap:18px;align-items:center;font-size:11.5px;color:var(--text-2)}
+.topbar .meta b{color:var(--text);font-weight:600;font-family:var(--mono);font-size:11.5px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;vertical-align:middle}
+.dot.pulse{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.workspace{flex:1;display:flex;min-height:0}
+
+.sidebar{
+  width:270px;flex:0 0 270px;background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+.side-head{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.side-head h3{font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.4px;text-transform:uppercase}
+.side-head p{font-size:11.5px;color:var(--text-3);margin-top:3px}
+.ticket-list{flex:1;overflow-y:auto;padding:8px}
+.ticket{
+  padding:10px 11px;border-radius:8px;border:1px solid transparent;margin-bottom:4px;
+  cursor:pointer;transition:background .12s,border-color .12s;
+}
+.ticket:hover{background:#f7f8fa;border-color:var(--line)}
+.ticket.active{background:var(--blue-bg);border-color:var(--blue-line)}
+.ticket .t-head{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:3px}
+.ticket .t-id{font-family:var(--mono);font-size:10.5px;color:var(--text-3)}
+.ticket .t-title{font-size:12.5px;font-weight:500;line-height:1.4;margin-bottom:4px}
+.ticket .t-sub{font-size:11px;color:var(--text-3);display:flex;gap:8px;align-items:center}
+.badge{font-size:10px;padding:1px 6px;border-radius:4px;font-weight:500;white-space:nowrap}
+.badge.p0{background:var(--red-bg);color:var(--red);border:1px solid var(--red-line)}
+.badge.p1{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-line)}
+.badge.p2{background:#f1f3f6;color:var(--text-2);border:1px solid var(--line)}
+.side-foot{padding:10px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--text-3);line-height:1.7}
+.side-foot .row{display:flex;justify-content:space-between}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg);position:relative}
+.conv{flex:1;overflow-y:auto;padding:20px 24px 8px}
+.conv-inner{max-width:720px;margin:0 auto}
+
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;color:var(--text-3);gap:12px;padding-bottom:40px;
+}
+.empty .ico{
+  width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--text-2);margin-bottom:2px;
+}
+.empty .big{font-size:15px;color:var(--text);font-weight:500}
+.empty .sub{font-size:12.5px;max-width:330px;line-height:1.7}
+.empty .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px;max-width:368px}
+.empty .chips span{
+  font-size:11px;padding:3px 9px;border-radius:20px;background:#fff;
+  border:1px solid var(--line);color:var(--text-2);
+}
+.toast{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:#1a1d23;color:#fff;font-size:12px;padding:7px 14px;border-radius:8px;
+  opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;z-index:30;white-space:nowrap;
+}
+.toast.show{opacity:.94;transform:translateX(-50%) translateY(0)}
+
+.msg{display:flex;gap:10px;margin-bottom:16px;animation:fadeUp .25s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.avatar{
+  width:26px;height:26px;border-radius:7px;flex:0 0 26px;display:grid;place-items:center;
+  font-size:11px;font-weight:600;
+}
+.avatar.user{background:#e8eaee;color:var(--text-2)}
+.avatar.agent{background:#1a1d23;color:#fff}
+.msg-body{flex:1;min-width:0;padding-top:2px}
+.msg-name{font-size:11.5px;color:var(--text-3);margin-bottom:3px;display:flex;gap:8px;align-items:center}
+.msg-text{font-size:13.5px;line-height:1.72;white-space:pre-wrap;word-break:break-word}
+
+.step{
+  border-left:2px solid var(--line-strong);padding:0 0 2px 13px;margin:0 0 12px 12px;
+  position:relative;animation:fadeUp .25s ease both;
+}
+.step::before{
+  content:"";position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;
+  background:#fff;border:2px solid var(--line-strong);
+}
+.step.think::before{border-color:#9aa2b1}
+.step.tool-ro::before{border-color:var(--blue)}
+.step.tool-rw::before{border-color:var(--amber)}
+.step.ok::before{border-color:var(--green);background:var(--green)}
+.step.warn::before{border-color:var(--red)}
+.step-label{
+  font-size:10.5px;font-weight:600;letter-spacing:.5px;color:var(--text-3);
+  text-transform:uppercase;margin-bottom:5px;display:flex;gap:8px;align-items:center;
+}
+.step-label .t{font-family:var(--mono);font-weight:400;letter-spacing:0;color:var(--text-3)}
+.think-text{font-size:12.5px;color:var(--text-2);line-height:1.7;white-space:pre-wrap}
+
+.tool{
+  border:1px solid var(--line);border-radius:8px;background:var(--panel);
+  overflow:hidden;margin-bottom:2px;
+}
+.tool-head{
+  display:flex;align-items:center;gap:8px;padding:8px 11px;background:#fafbfc;
+  border-bottom:1px solid var(--line);cursor:pointer;user-select:none;
+}
+.tool-head .fn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text)}
+.tool-head .io{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600;letter-spacing:.3px}
+.io.ro{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-line)}
+.io.rw{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-line)}
+.tool-head .ms{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.tool-head .chev{color:var(--text-3);font-size:10px;transition:transform .15s}
+.tool.collapsed .chev{transform:rotate(-90deg)}
+.tool.collapsed .tool-body{display:none}
+.tool-body{padding:9px 11px;font-family:var(--mono);font-size:11.5px;line-height:1.65}
+.tool-body .k{color:var(--text-3)}
+.tool-body .args{color:var(--blue);margin-bottom:6px;word-break:break-all}
+.tool-body .res{
+  background:#f7f8fa;border:1px solid var(--line);border-radius:5px;
+  padding:7px 9px;white-space:pre-wrap;color:var(--text-2);max-height:190px;overflow-y:auto;
+}
+.tool-body .res.hl{background:var(--green-bg);border-color:var(--green-line);color:#0a5c3e}
+.tool-body .res.err{background:var(--red-bg);border-color:var(--red-line);color:#8a1c12}
+
+.approve{
+  border:1px solid var(--amber-line);background:var(--amber-bg);border-radius:9px;
+  padding:12px 14px;margin-bottom:12px;animation:fadeUp .25s ease both;
+}
+.approve-title{display:flex;align-items:center;gap:7px;font-weight:600;font-size:12.5px;color:var(--amber);margin-bottom:5px}
+.approve-title .warn-ic{
+  width:15px;height:15px;border-radius:50%;background:var(--amber);color:#fff;
+  display:grid;place-items:center;font-size:10px;font-weight:700;flex:0 0 15px;
+}
+.approve-desc{font-size:12px;color:#7c4a08;line-height:1.6;margin-bottom:10px}
+.approve-code{
+  font-family:var(--mono);font-size:11.5px;background:#fff;border:1px solid var(--amber-line);
+  border-radius:6px;padding:7px 9px;margin-bottom:10px;color:#7c4a08;word-break:break-all;
+}
+.approve-actions{display:flex;gap:8px}
+.btn{
+  padding:5px 13px;border-radius:6px;font-size:12px;font-weight:500;
+  border:1px solid var(--line-strong);background:#fff;transition:all .12s;
+}
+.btn:hover{background:#f7f8fa}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#1d4fd8}
+.btn.approve-ok{background:var(--green);border-color:var(--green);color:#fff}
+.btn.approve-ok:hover{background:#0b6644}
+.btn.approve-no{color:var(--red);border-color:var(--red-line);background:#fff}
+.btn.approve-no:hover{background:var(--red-bg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.approve-done{font-size:11.5px;margin-top:8px;display:flex;gap:6px;align-items:center}
+
+.answer{
+  border:1px solid var(--green-line);background:var(--green-bg);border-radius:9px;
+  padding:13px 15px;animation:fadeUp .3s ease both;
+}
+.answer-head{
+  font-size:11px;font-weight:600;letter-spacing:.4px;color:var(--green);
+  text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;
+}
+.answer-body{font-size:13px;line-height:1.75;color:#0b3d2b;white-space:pre-wrap}
+.answer-body strong{font-weight:600}
+.answer-foot{
+  margin-top:10px;padding-top:9px;border-top:1px dashed var(--green-line);
+  font-size:11px;color:#3f7a60;display:flex;gap:14px;flex-wrap:wrap;
+}
+
+.typing::after{
+  content:"▍";color:var(--text-3);animation:blink .9s step-end infinite;font-size:12px;
+}
+@keyframes blink{50%{opacity:0}}
+
+.composer{flex:0 0 auto;padding:10px 24px 16px;background:linear-gradient(to top,var(--bg) 60%,rgba(245,246,248,0))}
+.composer-inner{
+  max-width:720px;margin:0 auto;background:var(--panel);border:1px solid var(--line-strong);
+  border-radius:10px;padding:9px 11px;display:flex;gap:9px;align-items:flex-end;
+  box-shadow:0 1px 2px rgba(20,24,35,.04);
+}
+.composer-inner:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.composer textarea{
+  flex:1;border:none;outline:none;resize:none;font-family:inherit;font-size:13px;
+  line-height:1.6;max-height:90px;background:none;color:var(--text);
+}
+.composer textarea::placeholder{color:var(--text-3)}
+.send-btn{
+  width:26px;height:26px;border-radius:6px;background:var(--blue);color:#fff;
+  display:grid;place-items:center;flex:0 0 26px;transition:background .12s;
+}
+.send-btn:hover{background:#1d4fd8}
+.send-btn:disabled{background:#c9cdd6;cursor:not-allowed}
+.composer-hint{
+  max-width:720px;margin:7px auto 0;font-size:10.5px;color:var(--text-3);
+  display:flex;justify-content:space-between;
+}
+
+.trace{
+  width:296px;flex:0 0 296px;background:var(--panel);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+.trace-head{
+  padding:13px 15px 11px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.trace-head h3{font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.4px;text-transform:uppercase}
+.run-state{font-size:10.5px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--text-2);background:#fafbfc}
+.run-state.running{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue)}
+.run-state.done{background:var(--green-bg);border-color:var(--green-line);color:var(--green)}
+.run-state.wait{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+.trace-scroll{flex:1;overflow-y:auto;padding:12px 15px}
+.trace-sec{margin-bottom:16px}
+.trace-sec h4{
+  font-size:10.5px;font-weight:600;color:var(--text-3);letter-spacing:.5px;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat{
+  background:#fafbfc;border:1px solid var(--line);border-radius:7px;padding:7px 9px;
+}
+.stat .v{font-family:var(--mono);font-size:15px;font-weight:600;line-height:1.25;color:var(--text)}
+.stat .l{font-size:10px;color:var(--text-3);margin-top:1px}
+.trace-item{
+  display:flex;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:11.5px;
+}
+.trace-item:last-child{border-bottom:none}
+.trace-item .n{
+  font-family:var(--mono);font-size:10px;color:var(--text-3);
+  width:15px;flex:0 0 15px;padding-top:2px;
+}
+.trace-item .b{flex:1;min-width:0}
+.trace-item .nm{font-family:var(--mono);font-size:11.5px;font-weight:500;word-break:break-all}
+.trace-item .d{font-size:10.5px;color:var(--text-3);display:flex;gap:7px;margin-top:1px}
+.pill{font-size:9.5px;padding:0 5px;border-radius:3px;font-weight:500}
+.pill.ro{background:var(--blue-bg);color:var(--blue)}
+.pill.rw{background:var(--amber-bg);color:var(--amber)}
+.pill.ok{background:var(--green-bg);color:var(--green)}
+.pill.no{background:var(--red-bg);color:var(--red)}
+.policy{
+  border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fafbfc;
+}
+.policy-row{
+  display:flex;align-items:center;gap:7px;padding:6px 9px;font-size:11px;
+  border-bottom:1px solid var(--line);
+}
+.policy-row:last-child{border-bottom:none}
+.policy-row .k{color:var(--text-2);flex:1}
+.policy-row .v{font-weight:600;font-size:10.5px}
+.v.allow{color:var(--green)} .v.ask{color:var(--amber)} .v.deny{color:var(--red)}
+.trace-empty{color:var(--text-3);font-size:11.5px;text-align:center;padding:20px 0}
+
+.timeline-bar{
+  flex:0 0 3px;background:var(--line);position:relative;overflow:hidden;
+}
+.timeline-bar .fill{
+  position:absolute;left:0;top:0;height:100%;width:0;background:var(--blue);
+  transition:width .3s ease;
+}
+@media(max-width:1180px){.trace{display:none}}
+@media(max-width:900px){.sidebar{display:none}}
+@media(max-width:1320px){.topbar .tag{display:none}.topbar .meta{gap:12px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo">IT</div><span>一线自助 Agent</span></div>
+  <span class="tag">AgentScope-Java 2.0 · ReActAgent</span>
+  <div class="spacer"></div>
+  <div class="meta">
+    <span><span class="dot pulse"></span>运行时正常</span>
+    <span>会话 <b id="sessionId">sess-7f3a91</b></span>
+    <span>模型 <b>qwen-max</b></span>
+    <span>沙箱 <b>local</b></span>
+  </div>
+</div>
+
+<div class="workspace">
+  <aside class="sidebar">
+    <div class="side-head">
+      <h3>待处理工单</h3>
+      <p>选择一条，观察 Agent 如何自主处置</p>
+    </div>
+    <div class="ticket-list" id="ticketList"></div>
+    <div class="side-foot">
+      <div class="row"><span>今日自动处置</span><span id="statAuto">187</span></div>
+      <div class="row"><span>转人工</span><span id="statHuman">23</span></div>
+      <div class="row"><span>平均处置时长</span><span id="statAvg">41s</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toast" id="toast"></div>
+    <div class="conv" id="conv">
+      <div class="conv-inner" id="convInner">
+        <div class="empty" id="emptyState">
+          <div class="ico">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>
+            </svg>
+          </div>
+          <div class="big">选一条工单，看我怎么办它</div>
+          <div class="sub">我自行决定查什么、调哪个工具；碰到写操作会停下来等你确认</div>
+          <div class="chips">
+            <span>日志排查</span><span>账号解锁</span><span>设备故障</span>
+            <span>性能定位</span><span>权限开通</span><span>高危拦截</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="timeline-bar"><div class="fill" id="progress"></div></div>
+    <div class="composer">
+      <div class="composer-inner">
+        <textarea id="input" rows="1" placeholder="也可以直接描述问题，例如：ERP 单据提交报 500……"></textarea>
+        <button class="send-btn" id="sendBtn" title="发送">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+      <div class="composer-hint">
+        <span>演示环境：工具返回为预置脚本，真实运行时由 DashScope 驱动</span>
+        <span id="hintKeys">Enter 发送 · Shift+Enter 换行</span>
+      </div>
+    </div>
+  </main>
+
+  <aside class="trace">
+    <div class="trace-head">
+      <h3>执行追踪</h3>
+      <span class="run-state" id="runState">待命</span>
+    </div>
+    <div class="trace-scroll">
+      <div class="trace-sec">
+        <h4>本次运行</h4>
+        <div class="stat-grid">
+          <div class="stat"><div class="v" id="sSteps">0</div><div class="l">推理轮次</div></div>
+          <div class="stat"><div class="v" id="sTools">0</div><div class="l">工具调用</div></div>
+          <div class="stat"><div class="v" id="sTokens">0</div><div class="l">Token</div></div>
+          <div class="stat"><div class="v" id="sTime">0.0s</div><div class="l">耗时</div></div>
+        </div>
+      </div>
+      <div class="trace-sec">
+        <h4>工具调用链</h4>
+        <div id="traceList"><div class="trace-empty">尚未调用工具</div></div>
+      </div>
+      <div class="trace-sec">
+        <h4>权限策略</h4>
+        <div class="policy">
+          <div class="policy-row"><span class="k">只读查询（readOnly）</span><span class="v allow">放行</span></div>
+          <div class="policy-row"><span class="k">状态变更（写操作）</span><span class="v ask">待审批</span></div>
+          <div class="policy-row"><span class="k">生产环境高危操作</span><span class="v deny">拒绝</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    id: "INC-2041", p: "p0", tag: "P0",
+    title: "ERP 出库单提交持续报 500",
+    sub: "王敏 · 销售部 · 2 分钟前",
+    user: "ERP 里提交出库单一直报 500，客户在等发货，能看下吗",
+    steps: [
+      { type: "think", text: "先拿具体堆栈，不猜。查 erp-order 服务近 30 分钟的 ERROR 日志，关键字 OutboundOrder。", tok: 312 },
+      { type: "tool", fn: "query_app_logs", io: "ro", args: 'service="erp-order"  level="ERROR"  keyword="OutboundOrder"  window="30m"',
+        ms: 420, tok: 168,
+        result: '10:42:17.331 ERROR c.e.o.OutboundOrderService - submit failed, orderId=SO20261025031\njava.lang.NullPointerException: Cannot invoke "Address.getCity()" because "dto.address" is null\n\tat com.example.erp.order.OutboundOrderService.fillLogistics(OutboundOrderService.java:218)\n\tat com.example.erp.order.OutboundOrderService.submit(OutboundOrderService.java:154)\n\n10:43:02.884 同上（orderId=SO20261025032）\n10:44:51.209 同上（orderId=SO20261025033）\n\n共 3 条，全部落在 OutboundOrderService.java:218' },
+      { type: "think", text: "三个订单同一行崩，说明是代码路径问题，不是数据个例。218 行在 fillLogistics 里，先看这个服务最近有没有发版。", tok: 264 },
+      { type: "tool", fn: "list_recent_deploys", io: "ro", args: 'service="erp-order"  hours=24',
+        ms: 310, tok: 142,
+        result: 'v2.4.1   08:31  已部署   commit 7c1e9ab\n  └ 订单地址字段改为懒加载（lazy load）\n  └ 影响 OutboundOrderService / OrderQueryService\nv2.4.0   3 天前  已部署' },
+      { type: "think", text: "时间对得上：08:31 发版，10:42 开始报错。地址改懒加载后，如果订单没有收货地址，取 city 就是 null。查知识库有没有已知记录。", tok: 289 },
+      { type: "tool", fn: "search_knowledge_base", io: "ro", args: 'query="出库单 500 address null 懒加载"  top=3',
+        ms: 380, tok: 176, hl: true,
+        result: 'KB-1042  [v2.4.1 已知缺陷] 出库单提交 NPE       相关度 0.94\n  现象：地址改为懒加载后，未填收货地址的历史订单在提交时抛 NPE\n  缓解：① 引导补全收货地址  ② 临时置 erp.order.address.optional=true\n  根治：升级至 v2.4.2（预计 10-27 发布）或回滚 v2.4.0\n  负责人：ERP 二线 @李工' },
+      { type: "think", text: "再确认一下线上配置开关当前值，否则给的方案是错的。", tok: 121 },
+      { type: "tool", fn: "get_config", io: "ro", args: 'key="erp.order.address.optional"  env="prod"',
+        ms: 240, tok: 88,
+        result: 'erp.order.address.optional = false\n最后变更：2026-09-12  by ops-admin\n说明：为 false 时收货地址为必填，懒加载路径缺少空值保护' },
+      { type: "think", text: "定位完成：v2.4.1 的懒加载改动 + 历史订单缺地址 → NPE。改配置和回滚都属于生产变更，超出我的权限边界，我只出结论和工单。", tok: 341 },
+      { type: "answer", title: "根因已定位",
+        body: '<strong>根因</strong>：今天 08:31 部署的 erp-order v2.4.1（commit 7c1e9ab）把订单地址改成懒加载，但 <code>OutboundOrderService.fillLogistics()</code> 第 218 行没有做空值保护。历史订单只要没填收货地址，提交出库单就抛 NPE → 接口 500。\n\n<strong>影响范围</strong>：近 30 分钟 3 单失败，均为 9 月前创建的老订单。\n\n<strong>建议处置（按优先级）</strong>\n1. 立即：引导王敏在订单里补全收货地址，可绕过（已验证逻辑可行）\n2. 2 小时内：回滚 v2.4.1 → v2.4.0，或升级 v2.4.2（10-27 发布）\n3. 长期：fillLogistics 增加 address 空值兜底 + 补单测\n\n配置项 <code>erp.order.address.optional</code> 当前为 false，改成 true 也能缓解，但会放开必填校验，不建议。',
+        foot: ["3 次工具调用", "知识库命中 KB-1042", "未执行任何写操作"] },
+      { type: "approve", fn: "create_ticket", arg: 'system="itsm"  assignee="erp-l2/李工"  priority="P0"  ref="KB-1042"',
+        desc: "把结论整理成工单并指派给 ERP 二线，附带日志、变更记录、知识库链接。这会写入 ITSM 系统。",
+        ok: "工单 INC-2050 已创建并指派给 李工", no: "已取消，未创建工单" }
+    ]
+  },
+  {
+    id: "INC-2042", p: "p1", tag: "P1",
+    title: "在家 VPN 连不上，提示认证失败",
+    sub: "张伟 · 市场部 · 6 分钟前",
+    user: "我在家连 VPN 一直认证失败，下午还要给客户演示",
+    steps: [
+      { type: "think", text: "认证失败有两种：密码错或账号锁。先看账号状态，不急着解锁。", tok: 186 },
+      { type: "tool", fn: "get_ad_account", io: "ro", args: 'account="zhangwei"  domain="corp"',
+        ms: 290, tok: 132,
+        result: '账号：CORP\\zhangwei（张伟 / 市场部）\n状态：LOCKED   锁定时间：2026-10-25 14:08   原因：连续 5 次密码错误\n密码过期：否（2026-12-03）\nMFA：已绑定' },
+      { type: "tool", fn: "query_auth_events", io: "ro", args: 'account="zhangwei"  window="2h"',
+        ms: 330, tok: 118,
+        result: '14:02  FAIL  源 IP 113.89.xx.41（深圳）\n14:04  FAIL  源 IP 113.89.xx.41\n14:05  FAIL  源 IP 113.89.xx.41\n14:06  FAIL  源 IP 113.89.xx.41\n14:08  FAIL  源 IP 113.89.xx.41  → 触发锁定策略\n\n5 次全部同一 IP，无跨地域特征，判定为本人手误而非撞库。' },
+      { type: "think", text: "同一 IP 连续输错，是自己记错密码，不是攻击。符合「解锁」的自助条件，解锁是写操作，走审批。", tok: 208 },
+      { type: "approve", fn: "unlock_ad_account", arg: 'account="zhangwei"  domain="corp"  lockDuration="2h"',
+        desc: "解除 AD 账号锁定。不重置密码，用户需用正确密码重连。该操作会写入域控。",
+        ok: "已解锁，账号状态 → ACTIVE", no: "已取消，账号仍为锁定状态" },
+      { type: "tool", fn: "get_vpn_client_version", io: "ro", args: 'account="zhangwei"',
+        ms: 190, tok: 64,
+        result: '上次成功连接：2026-10-21 09:12\n客户端版本：6.8.2（当前要求 ≥ 7.0）' },
+      { type: "answer", title: "已解锁，另有一个隐患",
+        body: '<strong>原因</strong>：14:02-14:08 连续 5 次密码错误，触发域控锁定策略。5 次来源同一 IP，判定为本人输入错误，非攻击。\n\n<strong>已处置</strong>：账号已解锁，现在用正确密码即可重连。\n\n<strong>顺带发现</strong>：你的 VPN 客户端是 6.8.2，低于要求的 7.0，即使连上也可能在 15 分钟内掉线。建议出发前先升级：内网首页 → 软件中心 → VPN 客户端 7.2。\n\n如果密码确实不记得了，我可以再发起一次 AD 密码重置（需你主管审批）。',
+        foot: ["2 次只读调用", "1 次写操作（已审批）", "耗时 18s"] }
+    ]
+  },
+  {
+    id: "INC-2043", p: "p1", tag: "P1",
+    title: "财务凭证打印机打不出来",
+    sub: "刘燕 · 财务部 · 11 分钟前",
+    user: "财务室这台打印机点了打印没反应，一会儿要出凭证",
+    steps: [
+      { type: "think", text: "先看打印队列状态，是任务卡住还是设备离线。", tok: 152 },
+      { type: "tool", fn: "get_printer_status", io: "ro", args: 'name="FIN-HP-02"',
+        ms: 260, tok: 104,
+        result: '设备：FIN-HP-02（财务室）\n在线：是   耗材：正常\n队列：12 个任务   状态：全部 PAUSED\n队首任务：2026-10-25 09:12  RPT-凭证打印-0925.pdf' },
+      { type: "think", text: "设备在线但队列全部暂停，通常是任务出错后自动挂起。看设备事件日志。", tok: 178 },
+      { type: "tool", fn: "get_printer_events", io: "ro", args: 'name="FIN-HP-02"  window="3h"',
+        ms: 280, tok: 96,
+        result: '09:12  ERROR  PCL XL error: 纸张尺寸不匹配（任务要求 A5，纸盒 1 为 A4）\n09:12  WARN   队列已暂停，等待人工处理\n09:13-09:40  后续 11 个任务入队，均未处理' },
+      { type: "think", text: "根因清楚：A5 任务打到 A4 纸盒，设备挂起后整个队列停住。清队列重发即可，属写操作。", tok: 201 },
+      { type: "approve", fn: "restart_print_queue", arg: 'name="FIN-HP-02"  action="clear-stuck,resume"',
+        desc: "清掉队首卡住的 A5 任务并恢复队列。其余 11 个任务会重新开始打印，纸张从 A4 纸盒出。",
+        ok: "队列已恢复，11 个任务开始打印（卡住的 A5 任务已移出）", no: "已取消，队列保持暂停" },
+      { type: "answer", title: "已恢复，附一个避免复发的建议",
+        body: '<strong>原因</strong>：09:12 有个任务要求 A5 纸，但纸盒装的是 A4，打印机 PCL 解析报错后自动暂停队列，后面 11 个任务全被阻塞。\n\n<strong>已处置</strong>：清掉卡住的 A5 任务，队列已恢复，11 个凭证正在输出。\n\n<strong>建议</strong>：财务室的 A5 凭证纸建议单独放纸盒 2，并在打印驱动里把凭证模板绑定到纸盒 2。要我提个变更单给 IT 支持组吗？',
+        foot: ["2 次只读调用", "1 次写操作（已审批）", "耗时 14s"] }
+    ]
+  },
+  {
+    id: "INC-2044", p: "p1", tag: "P1",
+    title: "ERP 白天整体变慢，单据打开要十几秒",
+    sub: "陈晓 · 采购部 · 15 分钟前",
+    user: "今天 ERP 特别慢，打开采购单要十几秒，是不是服务器要挂了",
+    steps: [
+      { type: "think", text: "先确认是整体劣化还是个别接口，拿 p99 曲线。", tok: 167 },
+      { type: "tool", fn: "query_metrics", io: "ro", args: 'service="erp"  metric="http_p99"  window="6h"',
+        ms: 450, tok: 148,
+        result: '08:00  812ms\n10:00  890ms\n11:00  1.2s\n11:20  4.21s  ← 拐点\n13:00  4.38s\n14:30  4.02s\n\nCPU 38%  内存 61%  连接池 12/50  → 资源层面正常，排除宕机前兆' },
+      { type: "think", text: "资源不紧张但延迟暴涨，典型的慢 SQL 抢锁或大查询。查最近的慢查询。", tok: 192 },
+      { type: "tool", fn: "query_slow_sql", io: "ro", args: 'window="1h"  minDuration="3000ms"  top=3',
+        ms: 410, tok: 156,
+        result: '1) 8.72s  SELECT ... FROM purchase_order po LEFT JOIN order_item ... WHERE ...\n   → 全表扫描 purchase_order（缺 idx_supplier_status）\n   来源：report-service / 用户 liuyan / 报表「供应商采购明细」\n2) 3.41s  同类查询（分页第 2 页）\n3) 3.02s  同类查询（分页第 3 页）' },
+      { type: "think", text: "对上了：11:20 开始的慢查询是一条全表扫描的供应商报表。看这个报表是不是还在跑。", tok: 174 },
+      { type: "tool", fn: "list_running_jobs", io: "ro", args: 'service="report-service"',
+        ms: 300, tok: 112,
+        result: 'RUNNING  RPT-2291  供应商采购明细导出\n  发起人：liuyan（采购部）  开始：11:20  进度：68%  预计剩余 22 分钟\n  导出范围：全量 2026 年（约 84 万行）' },
+      { type: "think", text: "不是服务器要挂，是一条大报表全表扫描拖慢了整库。不该我直接杀任务——她是业务在用，先给她和 DBA 建议。", tok: 248 },
+      { type: "answer", title: "不是宕机，是一条大报表拖慢了数据库",
+        body: '<strong>结论</strong>：服务器资源正常（CPU 38%，连接池 12/50），不是宕机前兆。\n\n<strong>根因</strong>：采购部 11:20 发起的报表导出 RPT-2291（全量 84 万行，无时间范围限制）走了全表扫描——<code>purchase_order</code> 表缺 <code>idx_supplier_status</code> 索引。该查询持续占用资源，把 ERP 整体 p99 从 800ms 拉到 4.2s。\n\n<strong>建议</strong>\n1. 等这个任务跑完（约 22 分钟）延迟会自然回落\n2. 让 liuyan 加时间范围（如按季度）重跑，别导全量\n3. 提 DBA 变更：补 <code>idx_supplier_status</code> 索引，并给报表导出加 5 万行上限\n\n<strong>不建议</strong>杀任务——她正在用导出的数据做月度汇总。',
+        foot: ["4 次只读调用", "0 次写操作", "主动规避了业务影响"] },
+      { type: "approve", fn: "create_ticket", arg: 'system="itsm"  assignee="dba/赵工"  priority="P2"  type="索引优化"',
+        desc: "提交 DBA 变更单：补索引 + 报表导出加行数上限。这是变更流程入口，不是直接改库。",
+        ok: "变更单 CHG-3312 已提交，抄送 DBA 赵工", no: "已取消" }
+    ]
+  },
+  {
+    id: "INC-2045", p: "p1", tag: "P1",
+    title: "新员工入职三天，账号还没开通",
+    sub: "周敏 · HR · 20 分钟前",
+    user: "陈一新上周五入职，到现在 ERP、OA、邮箱都登不上，人家没法开始工作",
+    steps: [
+      { type: "think", text: "先确认入职单和应开通的系统清单，不凭口头描述开号。", tok: 181 },
+      { type: "tool", fn: "get_onboarding", io: "ro", args: 'name="陈一新"  date="2026-10-23"',
+        ms: 290, tok: 134,
+        result: '员工：陈一新（E20261023）\n部门：渠道运营部   岗位：渠道运营专员\n入职日：2026-10-23   状态：已入职\n应开通：ERP（销售模块·只读）、OA、企业邮箱\n主管：周敏\n备注：入职单 10-23 已审批，IT 受理单未生成' },
+      { type: "tool", fn: "check_account", io: "ro", args: 'user="chenyixin"  systems=["erp","oa","mail"]',
+        ms: 320, tok: 108,
+        result: 'erp   不存在\n oa    不存在\n mail  不存在\n\n结论：入职单审批通过但未流转到 IT 受理，三个系统均未开号。' },
+      { type: "think", text: "入职单批了但卡在流转，属于流程断点。三个系统要分别开号，每次都是写操作，我一个个走审批。", tok: 226 },
+      { type: "approve", fn: "create_account", arg: 'system="erp"  user="chenyixin"  role="渠道运营（销售模块只读）"',
+        desc: "在 ERP 创建账号并授予销售模块只读权限。按岗位模板授权，不含审批与导出权限。",
+        ok: "ERP 账号已创建：chenyixin / 初始密码已由系统发给主管", no: "已跳过 ERP 开号" },
+      { type: "approve", fn: "create_account", arg: 'system="oa"  user="chenyixin"  role="渠道运营部-员工"',
+        desc: "在 OA 创建账号并加入渠道运营部组织架构，继承部门默认权限。",
+        ok: "OA 账号已创建，已加入「渠道运营部」", no: "已跳过 OA 开号" },
+      { type: "approve", fn: "create_account", arg: 'system="mail"  user="chenyixin@corp.com"  quota="20GB"',
+        desc: "开通企业邮箱并加入渠道运营部邮件组，会自动收到部门公共邮件。",
+        ok: "邮箱已开通：chenyixin@corp.com（20GB）", no: "已跳过邮箱开通" },
+      { type: "answer", title: "三个系统已开通，另外定位到一个流程断点",
+        body: '<strong>已处置</strong>\n· ERP：chenyixin，销售模块只读\n· OA：已加入渠道运营部\n· 邮箱：chenyixin@corp.com，20GB\n\n初始密码已由系统单独发送给主管周敏，我这里不显示明文。\n\n<strong>流程问题</strong>：入职单 10-23 就已审批通过，但没有生成 IT 受理单，导致三个系统都没触发开号。建议 HR 系统的入职审批流加一个「自动创建 IT 受理单」的节点，否则每个新员工都要靠人催。\n\n要我把这个流程问题提给 HR 系统负责人吗？',
+        foot: ["2 次只读调用", "3 次写操作（均逐个审批）", "耗时 46s"] }
+    ]
+  },
+  {
+    id: "INC-2046", p: "p0", tag: "P0",
+    title: "用户要求直接重启生产数据库",
+    sub: "临时会话 · 1 分钟前",
+    user: "别查了，直接把生产库重启一下，重启完肯定就好了",
+    steps: [
+      { type: "think", text: "请求是重启生产数据库。这类操作在我的策略里属于禁止项，先做策略判定，不执行。", tok: 198 },
+      { type: "deny", fn: "restart_service", arg: 'service="mysql-prod"  env="prod"  force=true',
+        rule: "policy.production.destructive = DENY",
+        text: "命中「生产环境高危操作」策略：重启生产数据库会中断所有在途事务，风险等级 P0。该工具对 prod 环境强制拒绝，不进入审批队列——即使有人批准也不会执行。" },
+      { type: "think", text: "拒绝之后不能只说不行，要给替代路径。刚才的监控数据显示资源正常，重启并不能解决问题。", tok: 236 },
+      { type: "tool", fn: "query_metrics", io: "ro", args: 'service="mysql-prod"  metric="cpu,conn,slow_queries"  window="1h"',
+        ms: 340, tok: 126,
+        result: 'CPU 41%   连接 12/50   慢查询 3 条（最长 8.72s）\n主从延迟 0.3s   无死锁   无长事务阻塞\n\n判定：实例健康，重启无收益且会造成 2-5 分钟全站不可用。' },
+      { type: "answer", title: "这个操作我不能做，但问题能解决",
+        body: '<strong>已拒绝执行</strong>：重启生产数据库命中高危策略，即使审批也不会放行。当前实例健康（CPU 41%、连接 12/50、无死锁），重启不但解决不了问题，还会造成全站 2-5 分钟不可用。\n\n<strong>真实原因</strong>：一条全表扫描的报表查询（8.72s，缺索引）把整体延迟拉高，不是数据库本身的问题。\n\n<strong>可以马上做的</strong>\n1. 让报表发起人加时间范围重跑（立竿见影）\n2. 提 DBA 变更补索引（根治）\n3. 如果确实需要重启，走变更窗口 + DBA 双人复核，不是现在\n\n要我帮你开工单给 DBA 吗？',
+        foot: ["策略拦截 1 次", "只读验证 1 次", "未对生产造成任何影响"] }
+    ]
+  }
+];
+
+const $ = (id) => document.getElementById(id);
+const conv = $("conv"), convInner = $("convInner");
+const traceList = $("traceList");
+
+const state = { running: false, token: 0, rounds: 0, tools: 0, tokens: 0, t0: 0, timer: null, approveResolve: null };
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function scrollBottom() { conv.scrollTop = conv.scrollHeight; }
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function setState(kind, label) {
+  const el = $("runState");
+  el.className = "run-state " + (kind || "");
+  el.textContent = label;
+}
+
+function fmtTime() {
+  const d = new Date();
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":");
+}
+
+function bumpTokens(n) {
+  state.tokens += n;
+  $("sTokens").textContent = state.tokens.toLocaleString();
+}
+
+function startTimer() {
+  state.t0 = Date.now();
+  clearInterval(state.timer);
+  state.timer = setInterval(() => {
+    $("sTime").textContent = ((Date.now() - state.t0) / 1000).toFixed(1) + "s";
+  }, 100);
+}
+function stopTimer() { clearInterval(state.timer); }
+
+function resetTrace() {
+  state.rounds = 0; state.tools = 0; state.tokens = 0;
+  $("sSteps").textContent = "0";
+  $("sTools").textContent = "0";
+  $("sTokens").textContent = "0";
+  $("sTime").textContent = "0.0s";
+  $("progress").style.width = "0%";
+  traceList.innerHTML = '<div class="trace-empty">尚未调用工具</div>';
+}
+
+function appendUser(text) {
+  const e = $("emptyState");
+  if (e) e.remove();
+  const div = document.createElement("div");
+  div.className = "msg";
+  div.innerHTML = '<div class="avatar user">我</div><div class="msg-body">' +
+    '<div class="msg-name">我 · ' + fmtTime() + '</div>' +
+    '<div class="msg-text"></div></div>';
+  div.querySelector(".msg-text").textContent = text;
+  convInner.appendChild(div);
+  scrollBottom();
+}
+
+function newStep(kind, label) {
+  const div = document.createElement("div");
+  div.className = "step " + kind;
+  div.innerHTML = '<div class="step-label">' + label + '<span class="t">' + fmtTime() + '</span></div>';
+  convInner.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+async function typewriter(node, text, speed) {
+  node.classList.add("typing");
+  let i = 0;
+  while (i < text.length) {
+    node.textContent = text.slice(0, i + 1);
+    i += 1;
+    scrollBottom();
+    await sleep(speed);
+  }
+  node.textContent = text;
+  node.classList.remove("typing");
+}
+
+function addToolTrace(fn, io, ms, ok) {
+  state.tools += 1;
+  $("sTools").textContent = state.tools;
+  const empty = traceList.querySelector(".trace-empty");
+  if (empty) empty.remove();
+  const item = document.createElement("div");
+  item.className = "trace-item";
+  const ioPill = io === "ro" ? '<span class="pill ro">只读</span>' : '<span class="pill rw">写入</span>';
+  const okPill = ok === false ? '<span class="pill no">拒绝</span>' : '<span class="pill ok">成功</span>';
+  item.innerHTML = '<div class="n">' + state.tools + '</div><div class="b">' +
+    '<div class="nm">' + fn + '</div>' +
+    '<div class="d">' + ioPill + okPill + '<span>' + ms + 'ms</span></div></div>';
+  traceList.appendChild(item);
+}
+
+function setProgress(p) { $("progress").style.width = Math.min(100, p) + "%"; }
+
+async function playThink(step, idx, total) {
+  const el = newStep("think", "推理");
+  const body = document.createElement("div");
+  body.className = "think-text";
+  el.appendChild(body);
+  await typewriter(body, step.text, 12);
+  bumpTokens(step.tok || 200);
+  state.rounds += 1;
+  $("sSteps").textContent = state.rounds;
+  setProgress((idx / total) * 100);
+  await sleep(180);
+}
+
+async function playTool(step, idx, total) {
+  const el = newStep(step.io === "ro" ? "tool-ro" : "tool-rw", step.io === "ro" ? "工具调用 · 只读" : "工具调用 · 写入");
+  const card = document.createElement("div");
+  card.className = "tool";
+  const ioLabel = step.io === "ro" ? '<span class="io ro">READ</span>' : '<span class="io rw">WRITE</span>';
+  card.innerHTML =
+    '<div class="tool-head"><span class="fn">' + step.fn + '</span>' + ioLabel +
+    '<span class="ms" data-ms>执行中…</span><span class="chev">▾</span></div>' +
+    '<div class="tool-body">' +
+      '<div class="args"><span class="k">args </span>' + step.args + '</div>' +
+      '<div class="res" data-res>等待返回…</div>' +
+    '</div>';
+  el.appendChild(card);
+  card.querySelector(".tool-head").addEventListener("click", () => {
+    card.classList.toggle("collapsed");
+  });
+  scrollBottom();
+
+  await sleep(step.ms ? step.ms * 0.6 : 300);
+  const resNode = card.querySelector("[data-res]");
+  resNode.textContent = step.result;
+  if (step.hl) resNode.classList.add("hl");
+  card.querySelector("[data-ms]").textContent = (step.ms || 300) + "ms";
+  addToolTrace(step.fn, step.io, step.ms || 300, true);
+  bumpTokens(step.tok || 120);
+  setProgress((idx / total) * 100);
+  scrollBottom();
+  await sleep(200);
+}
+
+function playDeny(step) {
+  const el = newStep("warn", "策略拦截");
+  const card = document.createElement("div");
+  card.className = "approve";
+  card.style.borderColor = "var(--red-line)";
+  card.style.background = "var(--red-bg)";
+  card.innerHTML =
+    '<div class="approve-title" style="color:var(--red)"><span class="warn-ic" style="background:var(--red)">!</span>已拒绝执行</div>' +
+    '<div class="approve-desc" style="color:#8a1c12">' + step.text + '</div>' +
+    '<div class="approve-code" style="border-color:var(--red-line);color:#8a1c12">' +
+      step.fn + '(' + step.arg + ')\n→ ' + step.rule + '</div>';
+  el.appendChild(card);
+  addToolTrace(step.fn, "rw", 0, false);
+  scrollBottom();
+}
+
+function playApprove(step) {
+  return new Promise((resolve) => {
+    const el = newStep("tool-rw", "等待人工确认");
+    const card = document.createElement("div");
+    card.className = "approve";
+    card.innerHTML =
+      '<div class="approve-title"><span class="warn-ic">!</span>需要你的确认</div>' +
+      '<div class="approve-desc">' + step.desc + '</div>' +
+      '<div class="approve-code">' + step.fn + '(' + step.arg + ')</div>' +
+      '<div class="approve-actions">' +
+        '<button class="btn approve-ok">批准执行</button>' +
+        '<button class="btn approve-no">拒绝</button>' +
+      '</div>';
+    el.appendChild(card);
+    scrollBottom();
+    setState("wait", "等待审批");
+
+    const okBtn = card.querySelector(".approve-ok");
+    const noBtn = card.querySelector(".approve-no");
+
+    function done(approved) {
+      okBtn.disabled = true; noBtn.disabled = true;
+      const line = document.createElement("div");
+      line.className = "approve-done";
+      line.style.color = approved ? "var(--green)" : "var(--red)";
+      line.innerHTML = (approved ? "✓ " : "✕ ") + (approved ? step.ok : step.no);
+      card.appendChild(line);
+      addToolTrace(step.fn, "rw", 120, approved);
+      if (approved) bumpTokens(90);
+      setState("running", "运行中");
+      scrollBottom();
+      resolve(approved);
+    }
+
+    okBtn.addEventListener("click", () => done(true));
+    noBtn.addEventListener("click", () => done(false));
+  });
+}
+
+function playAnswer(step) {
+  const el = newStep("ok", "最终答复");
+  const card = document.createElement("div");
+  card.className = "answer";
+  const body = step.body.replace(/<code>/g, '<code style="font-family:var(--mono);font-size:12px;background:#fff;padding:1px 4px;border-radius:3px;border:1px solid var(--green-line)">');
+  card.innerHTML =
+    '<div class="answer-head">✓ ' + step.title + '</div>' +
+    '<div class="answer-body">' + body + '</div>' +
+    '<div class="answer-foot">' + step.foot.map((f) => "<span>" + f + "</span>").join("") + '</div>';
+  el.appendChild(card);
+  scrollBottom();
+}
+
+async function runScenario(scn) {
+  if (state.running) { showToast("当前任务还在跑，先处理上面那个待确认的弹窗"); return; }
+  document.querySelectorAll(".ticket").forEach((t) => t.classList.remove("active"));
+  const active = document.querySelector('[data-ticket="' + scn.id + '"]');
+  if (active) active.classList.add("active");
+
+  state.running = true;
+  state.token += 1;
+  const tk = state.token;
+  $("sessionId").textContent = "sess-" + Math.random().toString(16).slice(2, 8);
+  resetTrace();
+  convInner.innerHTML = "";
+  setState("running", "运行中");
+  startTimer();
+  appendUser(scn.user);
+  await sleep(400);
+
+  const total = scn.steps.length;
+  for (let i = 0; i < scn.steps.length; i++) {
+    if (state.token !== tk) return;
+    const s = scn.steps[i];
+    if (s.type === "think") await playThink(s, i, total);
+    else if (s.type === "tool") await playTool(s, i, total);
+    else if (s.type === "deny") { playDeny(s); await sleep(600); }
+    else if (s.type === "approve") {
+      await playApprove(s);
+      if (state.token !== tk) return;
+    } else if (s.type === "answer") { playAnswer(s); await sleep(300); }
+  }
+  if (state.token !== tk) return;
+  stopTimer();
+  state.running = false;
+  setProgress(100);
+  setState("done", "已完成");
+}
+
+function renderTickets() {
+  const list = $("ticketList");
+  list.innerHTML = "";
+  SCENARIOS.forEach((s) => {
+    const div = document.createElement("div");
+    div.className = "ticket";
+    div.dataset.ticket = s.id;
+    div.innerHTML =
+      '<div class="t-head"><span class="t-id">' + s.id + '</span><span class="badge ' + s.p + '">' + s.tag + '</span></div>' +
+      '<div class="t-title">' + s.title + '</div>' +
+      '<div class="t-sub">' + s.sub + '</div>';
+    div.addEventListener("click", () => runScenario(s));
+    list.appendChild(div);
+  });
+}
+
+function customScenario(text) {
+  return {
+    id: "CUSTOM", user: text,
+    steps: [
+      { type: "think", text: "接收到一个新的描述。先判断它属于哪类问题，再决定查什么——如果没有匹配的工具，我应该直接说明，而不是编一个答案。", tok: 210 },
+      { type: "tool", fn: "classify_intent", io: "ro", args: 'text="' + text.slice(0, 24) + '…"',
+        ms: 320, tok: 96,
+        result: '匹配意图：未命中已知工单类型（置信度 0.31）\n候选：网络 / 账号 / 打印 / 性能\n建议：请补充报错原文、涉及系统、发生时间' },
+      { type: "answer", title: "信息不足，需要你补充",
+        body: "这个描述我还定位不了。演示环境里预置了 6 条工单，它们能完整展示推理链和权限拦截。\n\n真实运行时，这里会由 qwen-max 结合你的工具集做意图识别，并继续追问。\n\n<strong>请补充</strong>：哪个系统、报什么错、什么时候开始的、影响多少人。",
+        foot: ["演示环境", "未调用外部系统"] }
+    ]
+  };
+}
+
+function bindComposer() {
+  const input = $("input"), btn = $("sendBtn");
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 90) + "px";
+  });
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    if (state.running) return;
+    input.value = "";
+    input.style.height = "auto";
+    runScenario(customScenario(text));
+  }
+  btn.addEventListener("click", send);
+}
+
+renderTickets();
+bindComposer();
+
+const params = new URLSearchParams(location.search);
+const auto = params.get("auto");
+if (auto) {
+  const scn = SCENARIOS.find((x) => x.id === auto);
+  if (scn) runScenario(scn);
+}
+</script>
+</body>
+</html>

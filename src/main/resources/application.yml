@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  autoconfigure:
+    # 关掉 starter 的自动装配：它要求启动时必须存在 api-key，
+    # 而我们希望「没有 key 也能跑起来看链路」。模型由 HelpdeskAgentFactory 手动构建。
+    exclude: io.agentscope.spring.boot.dashscope.DashScopeAutoConfiguration
+
+helpdesk:
+  # 留空则走离线剧本模式（不调用模型，固定回放一条排查链）
+  # 填上就切真模型，建议用环境变量注入，不要提交到仓库：
+  #   export DASHSCOPE_API_KEY=sk-xxxx
+  api-key: ${DASHSCOPE_API_KEY:}
+  model: qwen-max
+  max-iters: 12
+
+logging:
+  level:
+    com.example.helpdesk: INFO
+    io.agentscope: INFO
+    # 打开可以看清每一次 allow / ask / deny 判定
+    io.agentscope.core.permission: DEBUG
